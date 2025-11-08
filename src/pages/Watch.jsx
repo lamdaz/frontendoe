@@ -12,6 +12,10 @@ const Watch = () => {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [videoUrl, setVideoUrl] = useState('');
+  const [selectedSource, setSelectedSource] = useState(0);
+  const [apiSources, setApiSources] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(0);
+  const [useApiSource, setUseApiSource] = useState(true);
 
   useEffect(() => {
     loadDetails();
@@ -21,7 +25,7 @@ const Watch = () => {
     if (details) {
       loadVideoSource();
     }
-  }, [details, selectedSeason, selectedEpisode]);
+  }, [details, selectedSeason, selectedEpisode, selectedSource, useApiSource, selectedFile]);
 
   const loadDetails = async () => {
     try {
@@ -40,29 +44,55 @@ const Watch = () => {
     }
   };
 
+  const getStreamingSources = () => {
+    if (type === 'tv') {
+      return [
+        { name: 'VidSrc Pro', url: `https://vidsrc.xyz/embed/${type}/${id}/${selectedSeason}/${selectedEpisode}` },
+        { name: 'VidSrc', url: `https://vidsrc.in/embed/${type}/${id}/${selectedSeason}-${selectedEpisode}` },
+        { name: 'Embed', url: `https://www.2embed.cc/embedtv/${id}&s=${selectedSeason}&e=${selectedEpisode}` },
+        { name: 'SuperEmbed', url: `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${selectedSeason}&e=${selectedEpisode}` },
+      ];
+    } else {
+      return [
+        { name: 'VidSrc Pro', url: `https://vidsrc.xyz/embed/${type}/${id}` },
+        { name: 'VidSrc', url: `https://vidsrc.in/embed/${type}/${id}` },
+        { name: 'Embed', url: `https://www.2embed.cc/embed/${id}` },
+        { name: 'SuperEmbed', url: `https://multiembed.mov/?video_id=${id}&tmdb=1` },
+      ];
+    }
+  };
+
   const loadVideoSource = async () => {
     try {
-      let sources;
-      if (type === 'movie') {
-        sources = await getMovieSources(id);
-      } else {
-        sources = await getTvSources(id, selectedSeason, selectedEpisode);
+      if (useApiSource) {
+        // Try to get sources from the backend API first
+        let apiData;
+        if (type === 'movie') {
+          apiData = await getMovieSources(id);
+        } else {
+          apiData = await getTvSources(id, selectedSeason, selectedEpisode);
+        }
+        
+        if (apiData && apiData.files && apiData.files.length > 0) {
+          setApiSources(apiData.files);
+          setVideoUrl(apiData.files[selectedFile]?.url || apiData.files[0]?.url);
+          return;
+        }
       }
       
-      // Try to get the video URL from various possible source formats
-      if (sources && sources.sources && sources.sources.length > 0) {
-        setVideoUrl(sources.sources[0].url);
-      } else if (sources && sources.stream) {
-        setVideoUrl(sources.stream);
-      } else {
-        // Fallback to a demo video or trailer
-        setVideoUrl(`https://vidsrc.to/embed/${type}/${id}`);
-      }
+      // Fallback to embedded sources
+      const sources = getStreamingSources();
+      setVideoUrl(sources[selectedSource].url);
     } catch (error) {
       console.error('Error loading video source:', error);
-      // Fallback to embedded player
-      setVideoUrl(`https://vidsrc.to/embed/${type}/${id}`);
+      // Fallback to embedded sources on error
+      const sources = getStreamingSources();
+      setVideoUrl(sources[selectedSource].url);
     }
+  };
+
+  const handleSourceChange = (index) => {
+    setSelectedSource(index);
   };
 
   const handleSeasonChange = (season) => {
@@ -107,6 +137,21 @@ const Watch = () => {
               allow="autoplay; fullscreen; picture-in-picture"
             />
           )}
+        </div>
+
+        <div className="watch__source-selector">
+          <label className="watch__source-label">Video Source (Switch if ads appear):</label>
+          <div className="watch__source-buttons">
+            {getStreamingSources().map((source, index) => (
+              <button
+                key={index}
+                className={`watch__source-btn ${selectedSource === index ? 'active' : ''}`}
+                onClick={() => handleSourceChange(index)}
+              >
+                {source.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="watch__info">
