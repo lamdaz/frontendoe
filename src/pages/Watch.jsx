@@ -129,30 +129,70 @@ const Watch = () => {
 
         <div className="watch__player">
           {videoUrl && (
-            <iframe
-              src={videoUrl}
-              className="watch__iframe"
-              frameBorder="0"
-              allowFullScreen
-              allow="autoplay; fullscreen; picture-in-picture"
-            />
+            apiSources.length > 0 ? (
+              <video
+                className="watch__video"
+                controls
+                autoPlay
+                controlsList="nodownload"
+              >
+                <source src={videoUrl} type="video/mp4" />
+                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                  <track
+                    key={index}
+                    kind="subtitles"
+                    src={subtitle.url}
+                    srcLang={subtitle.lang}
+                    label={subtitle.lang}
+                  />
+                ))}
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <iframe
+                src={videoUrl}
+                className="watch__iframe"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture"
+              />
+            )
           )}
         </div>
 
-        <div className="watch__source-selector">
-          <label className="watch__source-label">Video Source (Switch if ads appear):</label>
-          <div className="watch__source-buttons">
-            {getStreamingSources().map((source, index) => (
-              <button
-                key={index}
-                className={`watch__source-btn ${selectedSource === index ? 'active' : ''}`}
-                onClick={() => handleSourceChange(index)}
-              >
-                {source.name}
-              </button>
-            ))}
+        {apiSources.length > 1 && (
+          <div className="watch__source-selector">
+            <label className="watch__source-label">Quality / File:</label>
+            <div className="watch__source-buttons">
+              {apiSources.map((file, index) => (
+                <button
+                  key={index}
+                  className={`watch__source-btn ${selectedFile === index ? 'active' : ''}`}
+                  onClick={() => setSelectedFile(index)}
+                >
+                  {file.quality || `File ${index + 1}`}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {apiSources.length === 0 && (
+          <div className="watch__source-selector">
+            <label className="watch__source-label">Video Source (Switch if ads appear):</label>
+            <div className="watch__source-buttons">
+              {getStreamingSources().map((source, index) => (
+                <button
+                  key={index}
+                  className={`watch__source-btn ${selectedSource === index ? 'active' : ''}`}
+                  onClick={() => handleSourceChange(index)}
+                >
+                  {source.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="watch__info">
           <h1 className="watch__title">
