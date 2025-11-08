@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Hls from 'hls.js';
 import { getMovieDetails, getTVDetails, getMovieSources, getTvSources } from '../api/api';
 import Header from '../components/Header';
 import '../styles/Watch.css';
@@ -14,6 +15,8 @@ const Watch = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [apiSources, setApiSources] = useState([]);
   const [selectedFile, setSelectedFile] = useState(0);
+  const videoRef = useRef(null);
+  const hlsRef = useRef(null);
 
   useEffect(() => {
     loadDetails();
@@ -24,6 +27,78 @@ const Watch = () => {
       loadVideoSource();
     }
   }, [details, selectedSeason, selectedEpisode, selectedFile]);
+
+  useEffect(() => {
+    // Cleanup HLS on unmount
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (videoUrl && videoRef.current && apiSources.length > 0) {
+      const video = videoRef.current;
+      const isHLS = apiSources[selectedFile]?.type === 'hls' || videoUrl.includes('.m3u8');
+
+      if (isHLS) {
+        if (Hls.isSupported()) {
+          // Destroy previous HLS instance if exists
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+          }
+
+          // Create new HLS instance
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          
+          hlsRef.current = hls;
+          hls.loadSource(videoUrl);
+          hls.attachMedia(video);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(e => console.log('Autoplay prevented:', e));
+          });
+
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            console.error('HLS Error:', data);
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  console.log('Network error, trying to recover...');
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  console.log('Media error, trying to recover...');
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  console.log('Fatal error, cannot recover');
+                  hls.destroy();
+                  break;
+              }
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari native HLS support
+          video.src = videoUrl;
+          video.addEventListener('loadedmetadata', () => {
+            video.play().catch(e => console.log('Autoplay prevented:', e));
+          });
+        }
+      } else {
+        // Regular MP4 video
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+        video.src = videoUrl;
+      }
+    }
+  }, [videoUrl, apiSources, selectedFile]);
 
   const loadDetails = async () => {
     try {
@@ -108,45 +183,23 @@ const Watch = () => {
 
         <div className="watch__player">
           {videoUrl && apiSources.length > 0 ? (
-            apiSources[selectedFile]?.type === 'hls' || videoUrl.includes('.m3u8') ? (
-              <video
-                className="watch__video"
-                controls
-                autoPlay
-                controlsList="nodownload"
-              >
-                <source src={videoUrl} type="application/x-mpegURL" />
-                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
-                  <track
-                    key={index}
-                    kind="subtitles"
-                    src={subtitle.url}
-                    srcLang={subtitle.lang || 'en'}
-                    label={subtitle.lang || 'English'}
-                  />
-                ))}
-                Your browser does not support HLS playback.
-              </video>
-            ) : (
-              <video
-                className="watch__video"
-                controls
-                autoPlay
-                controlsList="nodownload"
-              >
-                <source src={videoUrl} type="video/mp4" />
-                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
-                  <track
-                    key={index}
-                    kind="subtitles"
-                    src={subtitle.url}
-                    srcLang={subtitle.lang || 'en'}
-                    label={subtitle.lang || 'English'}
-                  />
-                ))}
-                Your browser does not support the video tag.
-              </video>
-            )
+            <video
+              ref={videoRef}
+              className="watch__video"
+              controls
+              controlsList="nodownload"
+            >
+              {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                <track
+                  key={index}
+                  kind="subtitles"
+                  src={subtitle.url}
+                  srcLang={subtitle.lang || 'en'}
+                  label={subtitle.lang || 'English'}
+                />
+              ))}
+              Your browser does not support this video.
+            </video>
           ) : (
             <div className="watch__not-available">
               <div className="watch__not-available-content">
