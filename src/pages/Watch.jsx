@@ -15,6 +15,7 @@ const Watch = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [apiSources, setApiSources] = useState([]);
   const [selectedFile, setSelectedFile] = useState(0);
+  const [loadingVideo, setLoadingVideo] = useState(false);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
 
@@ -119,6 +120,7 @@ const Watch = () => {
 
 
   const loadVideoSource = async () => {
+    setLoadingVideo(true);
     try {
       // Only use your CinePro API
       let apiData;
@@ -188,6 +190,8 @@ const Watch = () => {
       console.error('Error loading video source:', error);
       setApiSources([]);
       setVideoUrl('');
+    } finally {
+      setLoadingVideo(false);
     }
   };
 
@@ -224,7 +228,9 @@ const Watch = () => {
         </button>
 
         <div className="watch__player">
-          {videoUrl && apiSources.length > 0 ? (
+          {loadingVideo ? (
+            <div className="watch__loading">Loading video...</div>
+          ) : videoUrl && apiSources.length > 0 ? (
             <video
               ref={videoRef}
               className="watch__video"
