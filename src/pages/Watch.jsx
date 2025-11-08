@@ -75,13 +75,20 @@ const Watch = () => {
         }
         
         if (apiData && apiData.files && apiData.files.length > 0) {
-          setApiSources(apiData.files);
-          setVideoUrl(apiData.files[selectedFile]?.url || apiData.files[0]?.url);
+          // Store both files and subtitles from API
+          const filesWithSubtitles = apiData.files.map(file => ({
+            ...file,
+            subtitles: apiData.subtitles || []
+          }));
+          setApiSources(filesWithSubtitles);
+          // Your API uses 'file' not 'url'
+          setVideoUrl(filesWithSubtitles[selectedFile]?.file || filesWithSubtitles[0]?.file);
           setUseEmbedded(false);
           return;
         } else {
           // Show message that video is not available
           setApiSources([]);
+          setVideoUrl('');
         }
       }
       
@@ -137,24 +144,45 @@ const Watch = () => {
         <div className="watch__player">
           {videoUrl ? (
             apiSources.length > 0 ? (
-              <video
-                className="watch__video"
-                controls
-                autoPlay
-                controlsList="nodownload"
-              >
-                <source src={videoUrl} type="video/mp4" />
-                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
-                  <track
-                    key={index}
-                    kind="subtitles"
-                    src={subtitle.url}
-                    srcLang={subtitle.lang}
-                    label={subtitle.lang}
-                  />
-                ))}
-                Your browser does not support the video tag.
-              </video>
+              apiSources[selectedFile]?.type === 'hls' || videoUrl.includes('.m3u8') ? (
+                <video
+                  className="watch__video"
+                  controls
+                  autoPlay
+                  controlsList="nodownload"
+                >
+                  <source src={videoUrl} type="application/x-mpegURL" />
+                  {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                    <track
+                      key={index}
+                      kind="subtitles"
+                      src={subtitle.url}
+                      srcLang={subtitle.lang || 'en'}
+                      label={subtitle.lang || 'English'}
+                    />
+                  ))}
+                  Your browser does not support HLS playback.
+                </video>
+              ) : (
+                <video
+                  className="watch__video"
+                  controls
+                  autoPlay
+                  controlsList="nodownload"
+                >
+                  <source src={videoUrl} type="video/mp4" />
+                  {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                    <track
+                      key={index}
+                      kind="subtitles"
+                      src={subtitle.url}
+                      srcLang={subtitle.lang || 'en'}
+                      label={subtitle.lang || 'English'}
+                    />
+                  ))}
+                  Your browser does not support the video tag.
+                </video>
+              )
             ) : useEmbedded ? (
               <iframe
                 src={videoUrl}
