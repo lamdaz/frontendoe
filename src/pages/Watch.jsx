@@ -16,6 +16,7 @@ const Watch = () => {
   const [apiSources, setApiSources] = useState([]);
   const [selectedFile, setSelectedFile] = useState(0);
   const [useApiSource, setUseApiSource] = useState(true);
+  const [useEmbedded, setUseEmbedded] = useState(false);
 
   useEffect(() => {
     loadDetails();
@@ -64,7 +65,7 @@ const Watch = () => {
 
   const loadVideoSource = async () => {
     try {
-      if (useApiSource) {
+      if (!useEmbedded) {
         // Try to get sources from the backend API first
         let apiData;
         if (type === 'movie') {
@@ -76,23 +77,29 @@ const Watch = () => {
         if (apiData && apiData.files && apiData.files.length > 0) {
           setApiSources(apiData.files);
           setVideoUrl(apiData.files[selectedFile]?.url || apiData.files[0]?.url);
+          setUseEmbedded(false);
           return;
+        } else {
+          // Show message that video is not available
+          setApiSources([]);
         }
       }
       
-      // Fallback to embedded sources
-      const sources = getStreamingSources();
-      setVideoUrl(sources[selectedSource].url);
+      // Only use embedded sources if explicitly requested
+      if (useEmbedded) {
+        setApiSources([]);
+        const sources = getStreamingSources();
+        setVideoUrl(sources[selectedSource].url);
+      }
     } catch (error) {
       console.error('Error loading video source:', error);
-      // Fallback to embedded sources on error
-      const sources = getStreamingSources();
-      setVideoUrl(sources[selectedSource].url);
+      setApiSources([]);
     }
   };
 
   const handleSourceChange = (index) => {
     setSelectedSource(index);
+    setUseEmbedded(true);
   };
 
   const handleSeasonChange = (season) => {
@@ -128,7 +135,7 @@ const Watch = () => {
         </button>
 
         <div className="watch__player">
-          {videoUrl && (
+          {videoUrl ? (
             apiSources.length > 0 ? (
               <video
                 className="watch__video"
@@ -148,7 +155,7 @@ const Watch = () => {
                 ))}
                 Your browser does not support the video tag.
               </video>
-            ) : (
+            ) : useEmbedded ? (
               <iframe
                 src={videoUrl}
                 className="watch__iframe"
@@ -156,7 +163,15 @@ const Watch = () => {
                 allowFullScreen
                 allow="autoplay; fullscreen; picture-in-picture"
               />
-            )
+            ) : null
+          ) : (
+            <div className="watch__not-available">
+              <div className="watch__not-available-content">
+                <h2>🎬 Video Not Available</h2>
+                <p>This content is currently not available from our ad-free sources.</p>
+                <p>You can try alternative sources below (may contain ads).</p>
+              </div>
+            </div>
           )}
         </div>
 
