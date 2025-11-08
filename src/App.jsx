@@ -1,24 +1,20 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Watch from './pages/Watch';
+import Browse from './pages/Browse';
+import Search from './pages/Search';
+import './styles/App.css';
 
 function App() {
   return (
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100vh',
-              background: '#141414',
-              color: '#fff',
-              fontFamily: 'Arial, sans-serif'
-            }}>
-              <h1>CinePro - Coming Soon</h1>
-            </div>
-          } />
+          <Route path="/" element={<Home />} />
+          <Route path="/watch/:type/:id" element={<Watch />} />
+          <Route path="/browse/:category" element={<Browse />} />
+          <Route path="/search" element={<Search />} />
         </Routes>
       </div>
     </Router>

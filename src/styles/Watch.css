@@ -1,0 +1,170 @@
+.watch {
+  min-height: 100vh;
+  background-color: #141414;
+  color: white;
+}
+
+.watch__container {
+  padding-top: 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 50px;
+  padding-right: 50px;
+}
+
+.watch__back-btn {
+  background-color: rgba(51, 51, 51, 0.8);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.3s;
+}
+
+.watch__back-btn:hover {
+  background-color: rgba(51, 51, 51, 1);
+}
+
+.watch__player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000;
+  margin-bottom: 30px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.watch__iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.watch__info {
+  padding: 20px 0;
+}
+
+.watch__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.watch__episode-selector {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.watch__season-selector,
+.watch__episode-selector-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.watch__select {
+  padding: 8px 16px;
+  background-color: #333;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.watch__select:hover {
+  background-color: #444;
+}
+
+.watch__select:focus {
+  border-color: #e50914;
+}
+
+.watch__metadata {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  color: #b3b3b3;
+  flex-wrap: wrap;
+}
+
+.watch__year,
+.watch__rating,
+.watch__runtime {
+  display: flex;
+  align-items: center;
+}
+
+.watch__rating {
+  color: #ffd700;
+}
+
+.watch__overview {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e5e5e5;
+  margin-bottom: 20px;
+  max-width: 900px;
+}
+
+.watch__genres {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.watch__genre {
+  padding: 6px 16px;
+  background-color: #333;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #e5e5e5;
+}
+
+.watch__loading,
+.watch__error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  font-size: 1.5rem;
+  color: #e5e5e5;
+}
+
+.watch__error {
+  color: #e50914;
+}
+
+@media (max-width: 768px) {
+  .watch__container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .watch__title {
+    font-size: 1.8rem;
+  }
+
+  .watch__episode-selector {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .watch__metadata {
+    font-size: 0.9rem;
+    gap: 15px;
+  }
+
+  .watch__overview {
+    font-size: 1rem;
+  }
+}
