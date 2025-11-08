@@ -144,6 +144,19 @@ const Watch = () => {
             }
           }
           
+          // Process URL if it contains headers parameter
+          if (actualUrl && actualUrl.includes('&headers=')) {
+            const [baseUrl, headersParam] = actualUrl.split('&headers=');
+            // Encode both URL and headers properly for the proxy
+            const encodedUrl = encodeURIComponent(baseUrl);
+            const encodedHeaders = encodeURIComponent(headersParam);
+            actualUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://diuuiu.onrender.com'}/m3u8-proxy?url=${encodedUrl}&headers=${encodedHeaders}`;
+          } else if (actualUrl && actualUrl.includes('.m3u8')) {
+            // HLS URL without headers - still needs proxy
+            const encodedUrl = encodeURIComponent(actualUrl);
+            actualUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://diuuiu.onrender.com'}/m3u8-proxy?url=${encodedUrl}`;
+          }
+          
           // Process subtitles to use proxy with proper URL encoding
           const processedSubtitles = (apiData.subtitles || []).map(subtitle => {
             // If subtitle URL doesn't already use the proxy, encode it properly
