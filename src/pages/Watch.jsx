@@ -129,14 +129,30 @@ const Watch = () => {
       }
       
       if (apiData && apiData.files && apiData.files.length > 0) {
-        // Store both files and subtitles from API
-        const filesWithSubtitles = apiData.files.map(file => ({
-          ...file,
-          subtitles: apiData.subtitles || []
-        }));
-        setApiSources(filesWithSubtitles);
-        // Your API uses 'file' not 'url'
-        setVideoUrl(filesWithSubtitles[selectedFile]?.file || filesWithSubtitles[0]?.file);
+        // Process files and extract actual video URLs
+        const processedFiles = apiData.files.map(file => {
+          let actualUrl = file.file;
+          
+          // Check if file.file is a JSON string containing multiple URLs
+          if (typeof file.file === 'string' && file.file.trim().startsWith('{')) {
+            try {
+              const urlsObject = JSON.parse(file.file);
+              // Prefer hls1, then hls2, then hls3, then hls4, or first available
+              actualUrl = urlsObject.hls1 || urlsObject.hls2 || urlsObject.hls3 || urlsObject.hls4 || Object.values(urlsObject)[0];
+            } catch (e) {
+              console.log('File is not JSON, using as-is');
+            }
+          }
+          
+          return {
+            ...file,
+            file: actualUrl,
+            subtitles: apiData.subtitles || []
+          };
+        });
+        
+        setApiSources(processedFiles);
+        setVideoUrl(processedFiles[selectedFile]?.file || processedFiles[0]?.file);
       } else {
         // Show message that video is not available
         setApiSources([]);
