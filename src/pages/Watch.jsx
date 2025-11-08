@@ -12,11 +12,8 @@ const Watch = () => {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState(1);
   const [videoUrl, setVideoUrl] = useState('');
-  const [selectedSource, setSelectedSource] = useState(0);
   const [apiSources, setApiSources] = useState([]);
   const [selectedFile, setSelectedFile] = useState(0);
-  const [useApiSource, setUseApiSource] = useState(true);
-  const [useEmbedded, setUseEmbedded] = useState(false);
 
   useEffect(() => {
     loadDetails();
@@ -26,7 +23,7 @@ const Watch = () => {
     if (details) {
       loadVideoSource();
     }
-  }, [details, selectedSeason, selectedEpisode, selectedSource, useApiSource, selectedFile]);
+  }, [details, selectedSeason, selectedEpisode, selectedFile]);
 
   const loadDetails = async () => {
     try {
@@ -45,68 +42,36 @@ const Watch = () => {
     }
   };
 
-  const getStreamingSources = () => {
-    if (type === 'tv') {
-      return [
-        { name: 'VidSrc Pro', url: `https://vidsrc.xyz/embed/${type}/${id}/${selectedSeason}/${selectedEpisode}` },
-        { name: 'VidSrc', url: `https://vidsrc.in/embed/${type}/${id}/${selectedSeason}-${selectedEpisode}` },
-        { name: 'Embed', url: `https://www.2embed.cc/embedtv/${id}&s=${selectedSeason}&e=${selectedEpisode}` },
-        { name: 'SuperEmbed', url: `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${selectedSeason}&e=${selectedEpisode}` },
-      ];
-    } else {
-      return [
-        { name: 'VidSrc Pro', url: `https://vidsrc.xyz/embed/${type}/${id}` },
-        { name: 'VidSrc', url: `https://vidsrc.in/embed/${type}/${id}` },
-        { name: 'Embed', url: `https://www.2embed.cc/embed/${id}` },
-        { name: 'SuperEmbed', url: `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-      ];
-    }
-  };
 
   const loadVideoSource = async () => {
     try {
-      if (!useEmbedded) {
-        // Try to get sources from the backend API first
-        let apiData;
-        if (type === 'movie') {
-          apiData = await getMovieSources(id);
-        } else {
-          apiData = await getTvSources(id, selectedSeason, selectedEpisode);
-        }
-        
-        if (apiData && apiData.files && apiData.files.length > 0) {
-          // Store both files and subtitles from API
-          const filesWithSubtitles = apiData.files.map(file => ({
-            ...file,
-            subtitles: apiData.subtitles || []
-          }));
-          setApiSources(filesWithSubtitles);
-          // Your API uses 'file' not 'url'
-          setVideoUrl(filesWithSubtitles[selectedFile]?.file || filesWithSubtitles[0]?.file);
-          setUseEmbedded(false);
-          return;
-        } else {
-          // Show message that video is not available
-          setApiSources([]);
-          setVideoUrl('');
-        }
+      // Only use your CinePro API
+      let apiData;
+      if (type === 'movie') {
+        apiData = await getMovieSources(id);
+      } else {
+        apiData = await getTvSources(id, selectedSeason, selectedEpisode);
       }
       
-      // Only use embedded sources if explicitly requested
-      if (useEmbedded) {
+      if (apiData && apiData.files && apiData.files.length > 0) {
+        // Store both files and subtitles from API
+        const filesWithSubtitles = apiData.files.map(file => ({
+          ...file,
+          subtitles: apiData.subtitles || []
+        }));
+        setApiSources(filesWithSubtitles);
+        // Your API uses 'file' not 'url'
+        setVideoUrl(filesWithSubtitles[selectedFile]?.file || filesWithSubtitles[0]?.file);
+      } else {
+        // Show message that video is not available
         setApiSources([]);
-        const sources = getStreamingSources();
-        setVideoUrl(sources[selectedSource].url);
+        setVideoUrl('');
       }
     } catch (error) {
       console.error('Error loading video source:', error);
       setApiSources([]);
+      setVideoUrl('');
     }
-  };
-
-  const handleSourceChange = (index) => {
-    setSelectedSource(index);
-    setUseEmbedded(true);
   };
 
   const handleSeasonChange = (season) => {
@@ -142,62 +107,52 @@ const Watch = () => {
         </button>
 
         <div className="watch__player">
-          {videoUrl ? (
-            apiSources.length > 0 ? (
-              apiSources[selectedFile]?.type === 'hls' || videoUrl.includes('.m3u8') ? (
-                <video
-                  className="watch__video"
-                  controls
-                  autoPlay
-                  controlsList="nodownload"
-                >
-                  <source src={videoUrl} type="application/x-mpegURL" />
-                  {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
-                    <track
-                      key={index}
-                      kind="subtitles"
-                      src={subtitle.url}
-                      srcLang={subtitle.lang || 'en'}
-                      label={subtitle.lang || 'English'}
-                    />
-                  ))}
-                  Your browser does not support HLS playback.
-                </video>
-              ) : (
-                <video
-                  className="watch__video"
-                  controls
-                  autoPlay
-                  controlsList="nodownload"
-                >
-                  <source src={videoUrl} type="video/mp4" />
-                  {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
-                    <track
-                      key={index}
-                      kind="subtitles"
-                      src={subtitle.url}
-                      srcLang={subtitle.lang || 'en'}
-                      label={subtitle.lang || 'English'}
-                    />
-                  ))}
-                  Your browser does not support the video tag.
-                </video>
-              )
-            ) : useEmbedded ? (
-              <iframe
-                src={videoUrl}
-                className="watch__iframe"
-                frameBorder="0"
-                allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture"
-              />
-            ) : null
+          {videoUrl && apiSources.length > 0 ? (
+            apiSources[selectedFile]?.type === 'hls' || videoUrl.includes('.m3u8') ? (
+              <video
+                className="watch__video"
+                controls
+                autoPlay
+                controlsList="nodownload"
+              >
+                <source src={videoUrl} type="application/x-mpegURL" />
+                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                  <track
+                    key={index}
+                    kind="subtitles"
+                    src={subtitle.url}
+                    srcLang={subtitle.lang || 'en'}
+                    label={subtitle.lang || 'English'}
+                  />
+                ))}
+                Your browser does not support HLS playback.
+              </video>
+            ) : (
+              <video
+                className="watch__video"
+                controls
+                autoPlay
+                controlsList="nodownload"
+              >
+                <source src={videoUrl} type="video/mp4" />
+                {apiSources[selectedFile]?.subtitles?.map((subtitle, index) => (
+                  <track
+                    key={index}
+                    kind="subtitles"
+                    src={subtitle.url}
+                    srcLang={subtitle.lang || 'en'}
+                    label={subtitle.lang || 'English'}
+                  />
+                ))}
+                Your browser does not support the video tag.
+              </video>
+            )
           ) : (
             <div className="watch__not-available">
               <div className="watch__not-available-content">
                 <h2>🎬 Video Not Available</h2>
-                <p>This content is currently not available from our ad-free sources.</p>
-                <p>You can try alternative sources below (may contain ads).</p>
+                <p>This content is currently not available.</p>
+                <p>Please try another movie or TV show.</p>
               </div>
             </div>
           )}
@@ -220,22 +175,6 @@ const Watch = () => {
           </div>
         )}
 
-        {apiSources.length === 0 && (
-          <div className="watch__source-selector">
-            <label className="watch__source-label">Video Source (Switch if ads appear):</label>
-            <div className="watch__source-buttons">
-              {getStreamingSources().map((source, index) => (
-                <button
-                  key={index}
-                  className={`watch__source-btn ${selectedSource === index ? 'active' : ''}`}
-                  onClick={() => handleSourceChange(index)}
-                >
-                  {source.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="watch__info">
           <h1 className="watch__title">
