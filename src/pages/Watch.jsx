@@ -144,10 +144,23 @@ const Watch = () => {
             }
           }
           
+          // Process subtitles to use proxy with proper URL encoding
+          const processedSubtitles = (apiData.subtitles || []).map(subtitle => {
+            // If subtitle URL doesn't already use the proxy, encode it properly
+            if (subtitle.url && !subtitle.url.includes('/sub-proxy')) {
+              const encodedUrl = encodeURIComponent(subtitle.url);
+              return {
+                ...subtitle,
+                url: `${import.meta.env.VITE_API_BASE_URL || 'https://diuuiu.onrender.com'}/sub-proxy?url=${encodedUrl}`
+              };
+            }
+            return subtitle;
+          });
+          
           return {
             ...file,
             file: actualUrl,
-            subtitles: apiData.subtitles || []
+            subtitles: processedSubtitles
           };
         });
         
